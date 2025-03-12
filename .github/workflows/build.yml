@@ -34,6 +34,25 @@ jobs:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       run: |
         echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+        # 检查 keystore.jks 是否生成成功
+        if [ -f keystore.jks ]; then
+          echo "keystore.jks 文件已成功生成。"
+        else
+          echo "keystore.jks 文件生成失败，请检查 KEYSTORE_BASE64 机密配置。"
+          exit 1
+        fi
+
+    - name: 显示当前工作目录和文件列表
+      run: |
+        pwd
+        ls -la
+
+    - name: 验证 keystore.jks 文件路径
+      run: |
+        test -f $GITHUB_WORKSPACE/tv/keystore.jks || {
+          echo "keystore.jks 文件不在预期路径 $GITHUB_WORKSPACE/tv/ 下。"
+          exit 1
+        }
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
@@ -45,7 +64,7 @@ jobs:
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
       run: |
         ./gradlew :tv:assembleRelease \
-          -Pandroid.injected.signing.store.file=keystore.jks \
+          -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/tv/keystore.jks \
           -Pandroid.injected.signing.store.password=$STORE_PASSWORD \
           -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
