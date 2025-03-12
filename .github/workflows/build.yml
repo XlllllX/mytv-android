@@ -1,18 +1,66 @@
-- name: Decrypt and copy keystore
-  env:
-    KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-  run: |
-    echo "$KEYSTORE_BASE64" | base64 -d > $GITHUB_WORKSPACE/tv/keystore.p12  # 更改为 .p12
-    test -f $GITHUB_WORKSPACE/tv/keystore.p12 || exit 1
+name: Kotlin CI
 
-- name: Build with Gradle
-  env:
-    STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-    KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-    KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-  run: |
-    ./gradlew :tv:assembleRelease \
-      -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/tv/keystore.p12  # 更改为 .p12
-      -Pandroid.injected.signing.store.password=$STORE_PASSWORD \
-      -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-      -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: gradle
+        gradle-version: '8.10.2'
+
+    - name: Install Android SDK
+      uses: malinskiy/action-android/install-sdk@release/0.1.2
+
+    - name: Create local.properties
+      run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+    - name: Decrypt and copy keystore
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      run: |
+        echo "$KEYSTORE_BASE64" | base64 -d > $GITHUB_WORKSPACE/tv/keystore.p12
+        test -f $GITHUB_WORKSPACE/tv/keystore.p12 || exit 1
+
+    - name: Debug keystore
+      env:
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+      run: |
+        keytool -list -v -keystore $GITHUB_WORKSPACE/tv/keystore.p12 -storepass $STORE_PASSWORD -storetype PKCS12
+
+    - name: Clean Gradle cache
+      run: ./gradlew cleanBuildCache
+
+    - name: Build with Gradle
+      env:
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      run: |
+        ./gradlew :tv:assembleRelease \
+          --configuration-cache \
+          -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/tv/keystore.p12 \
+          -Pandroid.injected.signing.store.password=$STORE_PASSWORD \
+          -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: mytv-android-tv-3.3.7-all-sdk21-original.apk
+        path: tv/original/release/mytv-android-tv-3.3.7-all-sdk21-original.apk
