@@ -22,10 +22,20 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: gradle
-        gradle-version: '8.10.2'
+
+    - name: Check disk space
+      run: df -h
 
     - name: Install Android SDK
-      uses: malinskiy/action-android/install-sdk@release/0.1.2
+      run: |
+        curl -L --retry 3 --retry-delay 5 https://dl.google.com/android/repository/commandlinetools-linux-6858069_latest.zip -o /tmp/android-sdk.zip -s
+        unzip -q /tmp/android-sdk.zip -d /home/runner/android-sdk
+        mv /home/runner/android-sdk/cmdline-tools /home/runner/android-sdk/cmdline-tools-tmp
+        mkdir -p /home/runner/android-sdk/cmdline-tools
+        mv /home/runner/android-sdk/cmdline-tools-tmp /home/runner/android-sdk/cmdline-tools/bootstrap-version
+        rm /tmp/android-sdk.zip
+        mkdir -p /home/runner/android-sdk/sdk_home
+        mkdir -p /home/runner/android-sdk/licenses
 
     - name: Create local.properties
       run: echo "sdk.dir=$ANDROID_HOME" > local.properties
