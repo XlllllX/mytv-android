@@ -23,14 +23,35 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
+    - name: Install Android SDK
+      uses: malinskiy/action-android/install-sdk@release/0.1.2
+
+    - name: Create local.properties
+      run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+    - name: Decrypt and copy keystore
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      run: |
+        echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+
     - name: Build with Gradle
-      run: ./gradlew :tv:assembleRelease
-    
+      env:
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      run: |
+        ./gradlew :tv:assembleRelease \
+          -Pandroid.injected.signing.store.file=keystore.jks \
+          -Pandroid.injected.signing.store.password=$STORE_PASSWORD \
+          -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: mytv-android-tv-3.3.7-all-sdk21-original.apk
         path: tv/original/release/mytv-android-tv-3.3.7-all-sdk21-original.apk
-    
