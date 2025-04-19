@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import android.widget.Toast
 import android.content.Context
 import android.content.Intent
-import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.core.data.entities.channel.Channel
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList.Companion.channelList
@@ -20,7 +19,6 @@ import top.yogiczy.mytv.core.data.entities.epg.EpgList
 import top.yogiczy.mytv.core.data.entities.epg.EpgList.Companion.match
 import top.yogiczy.mytv.core.data.entities.epg.EpgList.Companion.recentProgramme
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeReserveList
-import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
 import top.yogiczy.mytv.core.data.repositories.epg.EpgRepository
 import top.yogiczy.mytv.core.data.repositories.iptv.IptvRepository
 import top.yogiczy.mytv.tv.ui.material.PopupContent
@@ -306,7 +304,7 @@ fun MainContent(
     ) {
         IptvSourceScreen(
             currentIptvSourceProvider = { settingsViewModel.iptvSourceCurrent },
-            iptvSourceListProvider = {IptvSourceList(Constants.IPTV_SOURCE_LIST + settingsViewModel.iptvSourceList)},
+            iptvSourceListProvider = { settingsViewModel.iptvSourceList },
             onIptvSourceChanged = {
                 mainContentState.isIptvSourceScreenVisible = false
                 settingsViewModel.iptvSourceCurrent = it
